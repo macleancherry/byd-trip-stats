@@ -1,12 +1,17 @@
-# Cloudflare deployment config for the BYD Trip Stats marketing website.
+# Cloudflare deployment config for the Sealion 7 trip dashboard (PWA).
 # This is a static-asset-only Worker: no server code, it just serves the
-# files in ./website. `npx wrangler deploy` (the dashboard's default deploy
+# files in ./docs/pwa. `npx wrangler deploy` (the dashboard's default deploy
 # command) reads this file and uploads that directory.
+#
+# docs/pwa is also mirrored byte-for-byte into app/src/main/assets/pwa so the
+# native app can serve the same dashboard locally over its embedded HTTP
+# server — keep both copies in sync when editing either one.
 
-name = "byd-trip-stats"
+name = "sealion7-trip-stats"
 compatibility_date = "2026-06-01"
 
 [assets]
-directory = "./website"
-# Serve website/404.html for unknown paths.
-not_found_handling = "404-page"
+directory = "./docs/pwa"
+# Single-page app: unknown paths fall back to index.html (the app does its
+# own client-side routing via the URL hash) instead of a hard 404.
+not_found_handling = "single-page-application"

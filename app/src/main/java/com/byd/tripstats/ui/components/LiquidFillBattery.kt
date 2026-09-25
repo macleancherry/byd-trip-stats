@@ -151,23 +151,23 @@ fun LiquidFillBattery(
             val bodyLeft = (canvasWidth - batteryBodyWidth) / 2f
             val bodyTop = batteryNippleHeight + (canvasHeight - batteryBodyHeight - batteryNippleHeight) / 2f
             
-            // Color gradient based on SoC
+            // Color gradient based on SoC — refined performance tones, not neon
             val liquidColor = when {
                 animatedSoc >= 80f -> listOf(
-                    Color(0xFF00FF88), // Bright green
-                    Color(0xFF00CC66)  // Deep green
+                    Color(0xFF2FD98A), // Emerald
+                    Color(0xFF17A560)  // Deep emerald
                 )
                 animatedSoc >= 50f -> listOf(
-                    Color(0xFFFFDD00), // Yellow
-                    Color(0xFFFFAA00)  // Orange-yellow
+                    Color(0xFFF2C94C), // Gold
+                    Color(0xFFE0982A)  // Deep gold
                 )
                 animatedSoc >= 20f -> listOf(
-                    Color(0xFFFFAA00), // Orange
-                    Color(0xFFFF6600)  // Deep orange
+                    Color(0xFFE0982A), // Amber
+                    Color(0xFFD9622A)  // Deep amber
                 )
                 else -> listOf(
-                    Color(0xFFFF4444), // Red
-                    Color(0xFFCC0000)  // Deep red
+                    Color(0xFFE5484D), // Coral red
+                    Color(0xFFB8262B)  // Deep red
                 )
             }
             
@@ -299,10 +299,10 @@ fun CompactBattery(
     )
     
     val batteryColor = when {
-        animatedSoc >= 80f -> Color(0xFF00FF88)
-        animatedSoc >= 50f -> Color(0xFFFFDD00)
-        animatedSoc >= 20f -> Color(0xFFFFAA00)
-        else -> Color(0xFFFF4444)
+        animatedSoc >= 80f -> Color(0xFF2FD98A)
+        animatedSoc >= 50f -> Color(0xFFF2C94C)
+        animatedSoc >= 20f -> Color(0xFFE0982A)
+        else -> Color(0xFFE5484D)
     }
     
     Row(

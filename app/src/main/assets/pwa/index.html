@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>BYD Trip Stats</title>
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#0f1115" />
+<meta name="theme-color" content="#0b0c10" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="BYD Stats" />
@@ -18,24 +18,30 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
-  --bg:       #0f1115;
-  --panel:    #181b22;
-  --panel-2:  #20242d;
-  --text:     #e6e8ec;
-  --muted:    #9aa3b2;
-  --accent:   #4cc9f0;
-  --green:    #06d6a0;
-  --amber:    #ffd166;
-  --pink:     #f72585;
-  --border:   #262b36;
-  --radius:   12px;
+  /* Carbon/graphite cockpit palette — same tokens the native Sealion 7 app uses
+     (app/src/main/java/.../ui/theme/Color.kt), so the two stay in sync. */
+  --bg:       #0b0c10;
+  --panel:    #15171d;
+  --panel-2:  #1b1e26;
+  --panel-3:  #232732;   /* hover / elevated state */
+  --text:     #f4f5f7;
+  --muted:    #98a0ae;
+  --accent:   #5b9dff;   /* BydElectricBlue — sapphire */
+  --accent-rgb: 91,157,255;
+  --green:    #2fbe6f;   /* RegenGreen */
+  --amber:    #f2b33d;   /* ChargingYellow */
+  --amber-rgb: 242,179,61;
+  --danger:   #e5484d;   /* BydErrorRed */
+  --border:   #262a33;
+  --radius:   10px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: radial-gradient(ellipse 1200px 700px at 50% -10%, #14161d 0%, var(--bg) 55%) fixed;
   color: var(--text);
   min-height: 100vh;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
@@ -45,32 +51,36 @@ header {
   padding: 12px 20px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(var(--accent-rgb), 0.12);
 }
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand img { width: 28px; height: 28px; border-radius: 6px; }
-.brand span { font-size: 16px; font-weight: 600; white-space: nowrap; }
+.brand img { width: 28px; height: 28px; border-radius: 6px; box-shadow: 0 0 0 1px var(--border); }
+.brand span {
+  font-size: 15px; font-weight: 700; white-space: nowrap;
+  letter-spacing: 0.03em; text-transform: uppercase;
+}
 nav { display: flex; gap: 4px; flex: 1; justify-content: center; }
 nav button {
-  background: none; border: none; color: var(--muted);
-  padding: 6px 14px; border-radius: 8px; font-size: 14px; cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted);
+  padding: 6px 14px 8px; font-size: 14px; cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
 }
-nav button:hover { background: var(--panel-2); color: var(--text); }
-nav button.active { background: var(--panel-2); color: var(--accent); }
+nav button:hover { color: var(--text); }
+nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
 .load-btn {
   background: var(--panel-2); color: var(--text);
   border: 1px solid var(--border); padding: 7px 14px;
-  border-radius: 8px; font-size: 13px; cursor: pointer;
-  white-space: nowrap; transition: background 0.15s;
+  border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: background 0.15s, border-color 0.15s;
 }
-.load-btn:hover { background: #2a2f3b; }
+.load-btn:hover { background: var(--panel-3); border-color: rgba(var(--accent-rgb), 0.4); }
 #file-input { display: none; }
 
 /* ── Loading overlay ─────────────────────────────────────────────────────── */
 #loading {
   display: none;  /* JS-managed via style.display — never rely on [hidden] vs display:flex */
   position: fixed; inset: 0; z-index: 200;
-  background: rgba(15, 17, 21, 0.85);
+  background: rgba(11, 12, 16, 0.88);
   flex-direction: column; align-items: center; justify-content: center;
   gap: 16px; font-size: 15px; color: var(--muted);
 }
@@ -99,7 +109,7 @@ main { padding: 24px 20px; max-width: 1200px; margin: 0 auto; }
   background: var(--panel);
   transition: border-color 0.15s, background 0.15s;
 }
-.dropzone.drag { border-color: var(--accent); background: rgba(76,201,240,0.06); }
+.dropzone.drag { border-color: var(--accent); background: rgba(var(--accent-rgb),0.06); }
 .drop-icon { font-size: 48px; margin-bottom: 16px; }
 .dropzone strong { font-size: 18px; }
 .drop-hint { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
@@ -116,26 +126,37 @@ main { padding: 24px 20px; max-width: 1200px; margin: 0 auto; }
 
 /* ── Card ────────────────────────────────────────────────────────────────── */
 .card {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 16px 16px 16px 19px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
 }
-.card:hover { border-color: var(--accent); background: var(--panel-2); }
+.card::before {
+  /* Accent readout strip — fades in on hover instead of the whole card glowing */
+  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px;
+  border-radius: 3px; background: var(--accent); opacity: 0; transition: opacity 0.15s;
+}
+.card:hover {
+  border-color: rgba(var(--accent-rgb), 0.35); background: var(--panel-2);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -12px rgba(0,0,0,0.6);
+}
+.card:hover::before { opacity: 1; }
 .card-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 14px;
 }
-.card-date { font-size: 13px; color: var(--muted); }
+.card-date { font-size: 13px; color: var(--muted); font-weight: 500; }
 .badge {
   font-size: 11px; padding: 2px 8px;
   border-radius: 20px; background: var(--panel-2);
   color: var(--muted); border: 1px solid var(--border);
 }
-.charge-badge { color: var(--amber); border-color: rgba(255,209,102,0.3); }
-.dc-badge { color: var(--accent); border-color: rgba(76,201,240,0.35); font-weight: 700; }
+.charge-badge { color: var(--amber); border-color: rgba(var(--amber-rgb),0.3); }
+.dc-badge { color: var(--accent); border-color: rgba(var(--accent-rgb),0.35); font-weight: 700; }
 .card-head-right { display: flex; align-items: center; gap: 8px; }
 .star {
   background: none; border: none; cursor: pointer; padding: 0 2px;
@@ -151,7 +172,7 @@ span.star { cursor: default; }
   font-size: 13px; cursor: pointer; transition: all 0.15s;
 }
 .fav-filter:hover { color: var(--text); border-color: var(--accent); }
-.fav-filter.active { color: var(--amber); border-color: rgba(255,209,102,0.4); background: rgba(255,209,102,0.08); }
+.fav-filter.active { color: var(--amber); border-color: rgba(var(--amber-rgb),0.4); background: rgba(var(--amber-rgb),0.08); }
 
 /* ── List controls (sort / filter) ──────────────────────────────────────────── */
 .controls {
@@ -166,7 +187,7 @@ span.star { cursor: default; }
 }
 .controls select { padding: 5px 8px; }
 .ctl-btn:hover, .controls select:hover { border-color: var(--accent); }
-.ctl-btn.active { color: var(--accent); border-color: rgba(76,201,240,0.4); background: rgba(76,201,240,0.08); }
+.ctl-btn.active { color: var(--accent); border-color: rgba(var(--accent-rgb),0.4); background: rgba(var(--accent-rgb),0.08); }
 .filter-panel {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 12px; margin-bottom: 18px;
@@ -194,8 +215,8 @@ span.star { cursor: default; }
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
 }
 .stat { display: flex; flex-direction: column; gap: 2px; }
-.stat .val { font-size: 14px; font-weight: 600; color: var(--text); }
-.stat .lbl { font-size: 11px; color: var(--muted); }
+.stat .val { font-size: 14.5px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+.stat .lbl { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 
 /* ── Detail views ────────────────────────────────────────────────────────── */
 .detail-header {
@@ -208,7 +229,7 @@ span.star { cursor: default; }
   border-radius: 8px; font-size: 13px; cursor: pointer;
   transition: background 0.15s, color 0.15s; white-space: nowrap;
 }
-.back-btn:hover { background: #2a2f3b; color: var(--text); }
+.back-btn:hover { background: var(--panel-3); color: var(--text); }
 #trip-detail-header, #charge-detail-header {
   font-size: 15px; color: var(--muted);
 }
@@ -218,9 +239,10 @@ span.star { cursor: default; }
 }
 .stats-row .stat {
   background: var(--panel); border: 1px solid var(--border);
+  border-top: 1px solid rgba(var(--accent-rgb), 0.25);
   border-radius: 10px; padding: 12px 16px; min-width: 100px;
 }
-.stats-row .stat .val { font-size: 16px; }
+.stats-row .stat .val { font-size: 17px; }
 
 /* ── Map ─────────────────────────────────────────────────────────────────── */
 .map-container {
@@ -266,10 +288,10 @@ span.star { cursor: default; }
 .report-row.sub .lbl { padding-left: 12px; }
 .report-bar {
   height: 6px; border-radius: 3px; margin: 8px 0 12px;
-  background: rgba(255,209,102,0.25); overflow: hidden;
+  background: rgba(var(--amber-rgb),0.25); overflow: hidden;
 }
-.report-bar > div { height: 100%; background: var(--green, #4cc9f0); }
-.chart-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+.report-bar > div { height: 100%; background: var(--green); }
+.chart-title { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
 .chart-wrap { position: relative; height: 200px; }
 .chart-wrap.tall { height: 280px; }
 .chart-wrap canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
@@ -720,7 +742,7 @@ function tryParse(s) { try { return s ? JSON.parse(s) : null; } catch { return n
 function renderTripList() {
   _renderTripList().catch(err => {
     document.getElementById('trip-cards').innerHTML =
-      `<p class="empty" style="color:var(--pink)">Error: ${err.message}</p>`;
+      `<p class="empty" style="color:var(--danger)">Error: ${err.message}</p>`;
     console.error('renderTripList:', err);
   });
 }
@@ -970,7 +992,7 @@ function renderTripReport(rep) {
 function renderChargeList() {
   _renderChargeList().catch(err => {
     document.getElementById('charge-cards').innerHTML =
-      `<p class="empty" style="color:var(--pink)">Error: ${err.message}</p>`;
+      `<p class="empty" style="color:var(--danger)">Error: ${err.message}</p>`;
     console.error('renderChargeList:', err);
   });
 }
@@ -1098,24 +1120,24 @@ function decimate(pts, n = 400) {
 const xAxis = {
   type: 'time',
   time: { tooltipFormat: 'HH:mm:ss', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } },
-  ticks: { color: '#9aa3b2', maxRotation: 0, font: { size: 10 }, maxTicksLimit: 6 },
-  grid: { color: 'rgba(38,43,54,0.8)' }
+  ticks: { color: '#98a0ae', maxRotation: 0, font: { size: 10 }, maxTicksLimit: 6 },
+  grid: { color: 'rgba(38,42,51,0.8)' }
 };
 const yAxisLeft = (label, color) => ({
   title: { display: true, text: label, color, font: { size: 10 } },
-  ticks: { color: '#9aa3b2', font: { size: 10 } },
-  grid: { color: 'rgba(38,43,54,0.8)' }
+  ticks: { color: '#98a0ae', font: { size: 10 } },
+  grid: { color: 'rgba(38,42,51,0.8)' }
 });
 const yAxisRight = (label, color) => ({
   position: 'right',
   title: { display: true, text: label, color, font: { size: 10 } },
-  ticks: { color: '#9aa3b2', font: { size: 10 } },
+  ticks: { color: '#98a0ae', font: { size: 10 } },
   grid: { drawOnChartArea: false }
 });
 const pluginBase = {
   legend: {
     position: 'top',
-    labels: { color: '#9aa3b2', boxWidth: 10, font: { size: 11 }, padding: 12 }
+    labels: { color: '#98a0ae', boxWidth: 10, font: { size: 11 }, padding: 12 }
   },
   tooltip: { mode: 'index', intersect: false }
 };
@@ -1124,14 +1146,14 @@ function toXY(pts, field) {
   return decimate(pts).map(p => ({ x: +p.timestamp, y: +p[field] || 0 }));
 }
 
-// App brand colors (matches Android theme exactly)
+// App brand colors (matches Android theme exactly — ui/theme/Color.kt)
 const C = {
-  azure:  '#2196F3',  // BydElectricAzure  — speed, RPM rear, chart accents
-  cyan:   '#00CCFF',  // BydElectricBlue   — HV bus voltage
-  green:  '#4CAF50',  // RegenGreen        — power positive fill, cell min
-  orange: '#FF9800',  // AccelerationOrange — altitude, cell max, tyre RL
-  amber:  '#FFC107',  // ChargingYellow    — energy, SoC
-  violet: '#A78BFA',  // MotorViolet       — front motor RPM, tyre FR
+  azure:  '#3D7FFF',  // BydElectricAzure  — speed, RPM rear, chart accents
+  cyan:   '#5B9DFF',  // BydElectricBlue   — HV bus voltage
+  green:  '#2FBE6F',  // RegenGreen        — power positive fill, cell min
+  orange: '#FF8A3D',  // AccelerationOrange — altitude, cell max, tyre RL
+  amber:  '#F2B33D',  // ChargingYellow    — energy, SoC
+  violet: '#9C8CE0',  // MotorViolet       — front motor RPM, tyre FR
 };
 
 function emptyChart(id, msg) {
@@ -1181,7 +1203,7 @@ function renderTripCharts(pts) {
     type: 'line',
     data: { datasets: [{ label: 'Power (kW)', data: d.map(p => ({ x: +p.timestamp, y: +p.power || 0 })),
       borderColor: C.green, borderWidth: 1.5, pointRadius: 0, tension: 0.2,
-      fill: { target: 'origin', above: 'rgba(76,175,80,0.15)', below: 'rgba(33,150,243,0.15)' } }] },
+      fill: { target: 'origin', above: 'rgba(47,190,111,0.15)', below: 'rgba(61,127,255,0.15)' } }] },
     options: { responsive: true, maintainAspectRatio: false, animation: false,
       plugins: pluginBase, scales: { x: xAxis, y: yAxisLeft('kW', C.green) } }
   });
@@ -1200,7 +1222,7 @@ function renderTripCharts(pts) {
     type: 'line',
     data: { datasets: [{ label: 'Energy (kWh)', data: energyData,
       borderColor: C.amber, borderWidth: 1.5, pointRadius: 0, tension: 0.2,
-      fill: 'origin', backgroundColor: 'rgba(255,193,7,0.08)' }] },
+      fill: 'origin', backgroundColor: 'rgba(242,179,61,0.08)' }] },
     options: { responsive: true, maintainAspectRatio: false, animation: false,
       plugins: pluginBase, scales: { x: xAxis, y: yAxisLeft('kWh', C.amber) } }
   });
@@ -1210,7 +1232,7 @@ function renderTripCharts(pts) {
     type: 'line',
     data: { datasets: [{ label: 'SoC (%)', data: d.map(p => ({ x: +p.timestamp, y: +p.socPanel > 0 ? +p.socPanel : +p.soc })),
       borderColor: C.amber, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
-      fill: 'origin', backgroundColor: 'rgba(255,193,7,0.08)' }] },
+      fill: 'origin', backgroundColor: 'rgba(242,179,61,0.08)' }] },
     options: { responsive: true, maintainAspectRatio: false, animation: false,
       plugins: pluginBase, scales: { x: xAxis, y: { ...yAxisLeft('%', C.amber), min: 0, max: 100 } } }
   });
@@ -1220,7 +1242,7 @@ function renderTripCharts(pts) {
     type: 'line',
     data: { datasets: [{ label: 'Altitude (m)', data: d.map(p => ({ x: +p.timestamp, y: +p.altitude || 0 })),
       borderColor: C.orange, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
-      fill: 'origin', backgroundColor: 'rgba(255,152,0,0.08)' }] },
+      fill: 'origin', backgroundColor: 'rgba(255,138,61,0.08)' }] },
     options: { responsive: true, maintainAspectRatio: false, animation: false,
       plugins: pluginBase, scales: { x: xAxis, y: yAxisLeft('m', C.orange) } }
   });
@@ -1281,7 +1303,7 @@ function renderTripCharts(pts) {
       type: 'line',
       data: { datasets: [
         { label: 'Raw',     data: drivePts.map((p, i) => ({ x: +p.timestamp, y: raw[i] })),
-          borderColor: 'rgba(255,152,0,0.4)', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
+          borderColor: 'rgba(255,138,61,0.4)', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
         { label: 'Rolling avg', data: drivePts.map((p, i) => ({ x: +p.timestamp, y: avg[i] })),
           borderColor: C.azure, borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false },
       ]},
@@ -1301,16 +1323,16 @@ function renderChargeCharts(pts) {
     type: 'line',
     data: { datasets: [
       { label: 'Power (kW)', data: decimate(pts).map(p => ({ x: +p.timestamp, y: +p.chargingPower || 0 })),
-        borderColor: '#4cc9f0', borderWidth: 2, pointRadius: 0, tension: 0.3,
-        fill: 'origin', backgroundColor: 'rgba(76,201,240,0.1)', yAxisID: 'y' },
+        borderColor: '#5B9DFF', borderWidth: 2, pointRadius: 0, tension: 0.3,
+        fill: 'origin', backgroundColor: 'rgba(91,157,255,0.1)', yAxisID: 'y' },
       { label: 'SoC (%)', data: socData,
-        borderColor: '#ffd166', borderWidth: 1.5, pointRadius: 0, tension: 0.3,
+        borderColor: '#F2B33D', borderWidth: 1.5, pointRadius: 0, tension: 0.3,
         fill: false, yAxisID: 'y2' },
     ]},
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
       plugins: pluginBase,
-      scales: { x: xAxis, y: yAxisLeft('kW', '#4cc9f0'), y2: { ...yAxisRight('%', '#ffd166'), min: 0, max: 100 } }
+      scales: { x: xAxis, y: yAxisLeft('kW', '#5B9DFF'), y2: { ...yAxisRight('%', '#F2B33D'), min: 0, max: 100 } }
     }
   });
 }
@@ -1331,11 +1353,11 @@ function renderMap(containerId, route) {
     maxZoom: 20
   }).addTo(leafletMap);
   const latlngs = route.map(p => [p.lat, p.lon]);
-  const poly = L.polyline(latlngs, { color: '#4cc9f0', weight: 3, opacity: 0.9 }).addTo(leafletMap);
-  // Start marker (green) / End marker (pink)
-  L.circleMarker(latlngs[0], { radius: 7, color: '#06d6a0', fillColor: '#06d6a0', fillOpacity: 1, weight: 2 })
+  const poly = L.polyline(latlngs, { color: '#5B9DFF', weight: 3, opacity: 0.9 }).addTo(leafletMap);
+  // Start marker (emerald) / End marker (coral red)
+  L.circleMarker(latlngs[0], { radius: 7, color: '#2FBE6F', fillColor: '#2FBE6F', fillOpacity: 1, weight: 2 })
     .bindTooltip('Start').addTo(leafletMap);
-  L.circleMarker(latlngs[latlngs.length - 1], { radius: 7, color: '#f72585', fillColor: '#f72585', fillOpacity: 1, weight: 2 })
+  L.circleMarker(latlngs[latlngs.length - 1], { radius: 7, color: '#E5484D', fillColor: '#E5484D', fillOpacity: 1, weight: 2 })
     .bindTooltip('End').addTo(leafletMap);
   leafletMap.fitBounds(poly.getBounds(), { padding: [20, 20] });
 }
