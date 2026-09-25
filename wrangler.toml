@@ -12,6 +12,12 @@ compatibility_date = "2026-06-01"
 
 [assets]
 directory = "./docs/pwa"
-# Single-page app: unknown paths fall back to index.html (the app does its
-# own client-side routing via the URL hash) instead of a hard 404.
-not_found_handling = "single-page-application"
+# Deliberately plain 404s for unmatched paths (the default) — NOT
+# "single-page-application" fallback. The app's own routing is entirely
+# hash-based (#trip/1), never sent to the server, so there are no client
+# routes to fall back for. More importantly, on load the app probes
+# GET /api/status to detect whether it's being served by the car's embedded
+# HTTP server (live mode) vs. loaded standalone (upload-a-.db-file mode).
+# SPA fallback would answer that probe (and every other /api/* call) with
+# index.html + 200 OK instead of a real 404, so the app wrongly detects live
+# mode and then fails to parse HTML as JSON.
