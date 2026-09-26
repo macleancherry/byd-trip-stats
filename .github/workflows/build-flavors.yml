@@ -12,6 +12,10 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  # Lets you trigger a debug-APK build on demand from the Actions tab
+  # (Actions → Build Flavors → Run workflow) without needing a new commit —
+  # handy while iterating on the dilink5 build for install-and-check-on-car.
+  workflow_dispatch:
 
 jobs:
   build:
